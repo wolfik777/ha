@@ -950,6 +950,88 @@
             event.currentTarget.classList.add('selected');
         }
 
+        async function sendToTelegram(formData) {
+            const BOT_TOKEN = '8275081541:AAFtk4ltguG-iFC5PnrHvCkypakkO2_oRlA';
+            const CHAT_ID = '1304363285';
+            
+            let message = '🎯 <b>Новая заявка MamaHR!</b>\n\n';
+            
+            if (formData.type === 'parent') {
+                message += '👩‍👦 <b>РОДИТЕЛЬ</b>\n';
+                message += '━━━━━━━━━━━━━━━━━━━━\n';
+                message += `👤 <b>Имя:</b> ${formData.name}\n`;
+                message += `📧 <b>Email:</b> ${formData.email}\n`;
+                message += `📱 <b>Телефон:</b> ${formData.phone}\n`;
+                message += `🎓 <b>Студент:</b> ${formData.studentName || 'не указано'}\n`;
+                message += `💼 <b>Сфера:</b> ${formData.field}\n\n`;
+                
+                const payStatus = formData.willingToPay === 'yes' ? '✅ Да, готов платить' : 
+                                 formData.willingToPay === 'maybe' ? '🤔 Возможно, обсудим' : 
+                                 '❌ Нет';
+                message += `💰 <b>Готовность платить:</b> ${payStatus}\n`;
+                
+                if (formData.paymentAmount && formData.willingToPay === 'yes') {
+                    const amount = formData.paymentAmount === 'more' ? 'Больше 50 000' : formData.paymentAmount;
+                    message += `💵 <b>Сумма в месяц:</b> ${amount} ₽\n`;
+                }
+                
+                if (formData.comment) {
+                    message += `\n📝 <b>Комментарий:</b>\n${formData.comment}\n`;
+                }
+            } else {
+                message += '💼 <b>HR / КОМПАНИЯ</b>\n';
+                message += '━━━━━━━━━━━━━━━━━━━━\n';
+                message += `👤 <b>Имя:</b> ${formData.name}\n`;
+                message += `📧 <b>Email:</b> ${formData.email}\n`;
+                message += `📱 <b>Телефон:</b> ${formData.phone}\n`;
+                message += `🏢 <b>Компания:</b> ${formData.company}\n`;
+                message += `👥 <b>Размер:</b> ${formData.companySize || 'не указано'}\n`;
+                message += `🎯 <b>Вакансий:</b> ${formData.vacancies || 'не указано'}\n\n`;
+                
+                const interest = formData.platformInterest === 'yes' ? '✅ Да, интересно' : 
+                                formData.platformInterest === 'maybe' ? '🤔 Нужны детали' : 
+                                '❌ Не заинтересован';
+                message += `💡 <b>Интерес к платформе:</b> ${interest}\n`;
+                
+                if (formData.comment) {
+                    message += `\n📝 <b>Комментарий:</b>\n${formData.comment}\n`;
+                }
+            }
+            
+            message += `\n🕐 ${new Date().toLocaleString('ru-RU')}`;
+            message += `\n\n🌐 <a href="https://wolfik777.github.io/ha/">Перейти на сайт</a>`;
+            
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: CHAT_ID,
+                        text: message,
+                        parse_mode: 'HTML',
+                        disable_web_page_preview: true
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.ok) {
+                    console.error('Telegram API error:', data);
+                    throw new Error('Ошибка отправки в Telegram');
+                }
+                
+                console.log('✅ Заявка отправлена в Telegram');
+                return true;
+            } catch (error) {
+                console.error('❌ Ошибка отправки в Telegram:', error);
+                return false;
+            }
+        }
+
         async function submitForm(event, type) {
             event.preventDefault();
             
@@ -995,10 +1077,8 @@
             // Save to localStorage
             saveToLocalStorage(type, formData);
             
-            // Here you can integrate with external services
-            // await sendToGoogleForms(formData);
-            // await sendToTelegram(formData);
-            // await sendToAPI(formData);
+            // Send to Telegram
+            await sendToTelegram(formData);
             
             console.log('📝 Заявка отправлена:', formData);
             
